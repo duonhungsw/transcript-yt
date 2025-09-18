@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+asgiref
+youtube-transcript-api
+eng-to-ipa
