@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.proxies import WebshareProxyConfig
 from urllib.parse import urlparse, parse_qs
-import eng_to_ipa as ipa # type: ignore
+# import eng_to_ipa as ipa
+import itertools
+from youtube_transcript_api.proxies import GenericProxyConfig
 
 app = FastAPI()
 
@@ -16,7 +19,26 @@ def extract_video_id(url: str) -> str:
     if "youtube.com" in parsed.netloc:
         qs = parse_qs(parsed.query)
         return qs.get("v", [None])[0]
-    return None
+    return url  # fallback: nếu user truyền thẳng videoId
+
+# List proxy free bạn có
+proxies = [
+    "142.111.48.253:7030",
+    "198.23.239.134:6540",
+    "45.38.107.97:6014",
+    "107.172.163.27:6543",
+    "64.137.96.74:6641",
+    "154.203.43.247:5536",
+    "84.247.60.125:6095",
+    "216.10.27.159:6837",
+    "142.111.67.146:5611",
+    "142.147.128.93:6593"
+]
+
+username = "caeuoxgs"
+password = "mws74sumq7d0"
+
+proxy_cycle = itertools.cycle(proxies)
 
 @app.get("/")
 async def read_root():
@@ -26,10 +48,27 @@ async def read_root():
 def get_transcript(request: UrlRequest, lang: str = "vi"):
     # bạn có thể extract video_id từ request nếu muốn, ở đây hardcode để test
     # video_id = "tLwyHs7oXGM"
+    proxy = next(proxy_cycle)
+    proxy_url = f"http://{username}:{password}@{proxy}"
     print(request.videoId)
     video_id = request.videoId
     try:
-        ytt_api = YouTubeTranscriptApi()
+    #     ytt_api = YouTubeTranscriptApi(proxy_config=GenericProxyConfig(
+    #     http_url="http://zbtlapzo:rb0z3okzq8tv@142.111.48.253/",
+    #     https_url="http://zbtlapzo:rb0z3okzq8tv@142.111.48.253/",
+    # ))
+        # ytt_api = YouTubeTranscriptApi(proxy_config=WebshareProxyConfig(
+        # proxy_username="caeuoxgs",
+        # proxy_password="mws74sumq7d0",
+        #     )
+        # )
+        
+        ytt_api = YouTubeTranscriptApi(
+        proxy_config=GenericProxyConfig(
+            http_url=proxy_url,
+            https_url=proxy_url,
+            )
+        )
         transcript_list = ytt_api.list(video_id)
 
         transcript = transcript_list.find_transcript(["en"])
@@ -48,7 +87,7 @@ def get_transcript(request: UrlRequest, lang: str = "vi"):
             vn_text = None
             if translated and idx < len(translated):
                 vn_text = translated[idx]["text"]
-                ipa_text = ipa.convert(item["text"]) if item["text"] else None
+                # ipa_text = ipa.convert(item["text"]) if item["text"] else None
 
             result.append({
                 "orderIndex": idx + 1,
@@ -56,7 +95,7 @@ def get_transcript(request: UrlRequest, lang: str = "vi"):
                 "endTime": item["start"] + item["duration"],
                 "contentEN": item["text"],
                 "contentVN": vn_text,
-                "ipa": ipa_text
+                # "ipa": ipa_text
             })
 
         return result
@@ -74,7 +113,14 @@ def get_transcript(request: UrlRequest, lang: str = "vi"):
     # print(request.videoId)
     # video_id = request.videoId
     try:
-        ytt_api = YouTubeTranscriptApi()
+        proxy = next(proxy_cycle)
+        proxy_url = f"http://{username}:{password}@{proxy}"
+        ytt_api = YouTubeTranscriptApi(
+        proxy_config=GenericProxyConfig(
+            http_url=proxy_url,
+            https_url=proxy_url,
+            )
+        )
         transcript_list = ytt_api.list(video_id)
 
         transcript = transcript_list.find_transcript(["en"])
@@ -93,7 +139,7 @@ def get_transcript(request: UrlRequest, lang: str = "vi"):
             vn_text = None
             if translated and idx < len(translated):
                 vn_text = translated[idx]["text"]
-                ipa_text = ipa.convert(item["text"]) if item["text"] else None
+                # ipa_text = ipa.convert(item["text"]) if item["text"] else None
 
             result.append({
                 "orderIndex": idx + 1,
@@ -101,14 +147,13 @@ def get_transcript(request: UrlRequest, lang: str = "vi"):
                 "endTime": item["start"] + item["duration"],
                 "contentEN": item["text"],
                 "contentVN": vn_text,
-                "ipa": ipa_text
+                # "ipa": ipa_text
             })
 
-        return result
+        return result + video_id
 
     except Exception as e:
         import traceback
-        print("Error:", str(e))
+        print("Error:", str(e) + video_id)
         traceback.print_exc()
-        return {"error": str(e)}
-    
+        return {"error": str(e) + video_id}
