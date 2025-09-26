@@ -113,14 +113,7 @@ def get_transcript(request: UrlRequest, lang: str = "vi"):
     # print(request.videoId)
     # video_id = request.videoId
     try:
-        proxy = next(proxy_cycle)
-        proxy_url = f"http://{username}:{password}@{proxy}"
-        ytt_api = YouTubeTranscriptApi(
-        proxy_config=GenericProxyConfig(
-            http_url=proxy_url,
-            https_url=proxy_url,
-            )
-        )
+        ytt_api = YouTubeTranscriptApi()
         transcript_list = ytt_api.list(video_id)
 
         transcript = transcript_list.find_transcript(["en"])
