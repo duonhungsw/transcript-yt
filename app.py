@@ -106,7 +106,7 @@ def get_transcript(request: UrlRequest, lang: str = "vi"):
         traceback.print_exc()
         return {"error": str(e)}
     
-@app.post("/transcript-example")
+@app.post("/transcript-example1")
 def get_transcript(request: UrlRequest, lang: str = "vi"):
     # bạn có thể extract video_id từ request nếu muốn, ở đây hardcode để test
     video_id = "tLwyHs7oXGM"
